@@ -118,29 +118,6 @@ Cấu Hình UART:
 Ba cấu hình chính: Baud rate, Word length, Stop bits, Parity, và Flow control.
 Ví dụ cấu hình UART1 với baud rate 9600:
 
-c
-Copy code
-// Enable clock for UART1
-RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
-// Configure GPIO for UART1 TX and RX
-GPIOA->CRH |= (GPIO_CRH_MODE9_1 | GPIO_CRH_CNF9_1) | (GPIO_CRH_CNF10_0);
-// Configure UART1
-USART1->BRR = 72000000 / 9600; // Baud rate
-USART1->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UE; // Enable TX, RX, and UART
-Sử Dụng UART
-Gửi Dữ Liệu:
-
-c
-Copy code
-while (!(USART1->SR & USART_SR_TXE)); // Wait until TXE flag is set
-USART1->DR = data; // Send data
-Nhận Dữ Liệu:
-
-c
-Copy code
-while (!(USART1->SR & USART_SR_RXNE)); // Wait until RXNE flag is set
-data = USART1->DR; // Read received data
-2. Cấu Hình SPI (Serial Peripheral Interface)
 Cấu Hình SPI
 Chọn SPI Peripheral:
 
@@ -154,27 +131,10 @@ Cấu Hình SPI:
 Ba cấu hình chính: Baud rate, Data size, Clock polarity (CPOL), Clock phase (CPHA), và Frame format.
 Ví dụ cấu hình SPI1:
 
-c
-Copy code
-// Enable clock for SPI1
-RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
-// Configure GPIO for SPI1
-GPIOA->CRL |= (GPIO_CRL_MODE5 | GPIO_CRL_CNF5_1) | (GPIO_CRL_CNF6_1 | GPIO_CRL_MODE6) | (GPIO_CRL_CNF7_1 | GPIO_CRL_MODE7);
-// Configure SPI1
-SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_BR_0 | SPI_CR1_SSI | SPI_CR1_SSM | SPI_CR1_SPE; // Master mode, Baud rate, Enable
+
 Sử Dụng SPI
 Gửi Dữ Liệu:
 
-c
-Copy code
-while (!(SPI1->SR & SPI_SR_TXE)); // Wait until TXE flag is set
-SPI1->DR = data; // Send data
-Nhận Dữ Liệu:
-
-c
-Copy code
-while (!(SPI1->SR & SPI_SR_RXNE)); // Wait until RXNE flag is set
-data = SPI1->DR; // Read received data
 3. Cấu Hình I2C (Inter-Integrated Circuit)
 Cấu Hình I2C
 Chọn I2C Peripheral:
@@ -189,37 +149,3 @@ Cấu Hình I2C:
 Ba cấu hình chính: Clock speed, Addressing mode, và Digital noise filter.
 Ví dụ cấu hình I2C1:
 
-c
-Copy code
-// Enable clock for I2C1
-RCC->APB1ENR |= RCC_APB1ENR_I2C1EN;
-// Configure GPIO for I2C1
-GPIOB->CRL |= (GPIO_CRL_CNF6_1 | GPIO_CRL_MODE6_1) | (GPIO_CRL_CNF7_1 | GPIO_CRL_MODE7_1);
-// Configure I2C1
-I2C1->CR1 = I2C_CR1_PE; // Enable I2C1
-I2C1->CR2 = 36; // Clock control (based on PCLK1)
-I2C1->CCR = 180; // Timing settings
-I2C1->TRISE = 37; // Rise time
-Sử Dụng I2C
-Gửi Dữ Liệu:
-
-c
-Copy code
-I2C1->CR1 |= I2C_CR1_START; // Send start condition
-while (!(I2C1->SR1 & I2C_SR1_SB)); // Wait for start condition
-I2C1->DR = address; // Send address
-while (!(I2C1->SR1 & I2C_SR1_ADDR)); // Wait for address sent
-// Send data
-I2C1->DR = data;
-while (!(I2C1->SR1 & I2C_SR1_BTF)); // Wait until byte transfer finished
-I2C1->CR1 |= I2C_CR1_STOP; // Send stop condition
-Nhận Dữ Liệu:
-
-c
-Copy code
-I2C1->CR1 |= I2C_CR1_START; // Send start condition
-while (!(I2C1->SR1 & I2C_SR1_SB)); // Wait for start condition
-I2C1->DR = address | 1; // Send address for read
-while (!(I2C1->SR1 & I2C_SR1_ADDR)); // Wait for address sent
-data = I2C1->DR; // Read data
-I2C1->CR1 |= I2C_CR1_STOP; // Send stop condition
