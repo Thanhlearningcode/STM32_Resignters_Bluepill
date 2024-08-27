@@ -1,151 +1,52 @@
-Cấu Hình Timer
-Bước 1: Tính Toán Các Tham Số
+# STM32F103 Library
 
-Chọn Tần Số Xung Clock: Xác định tần số của xung clock cho timer. Ví dụ, giả sử xung clock là 72 MHz (tần số mặc định nếu không cấu hình khác).
+## Giới thiệu
 
-Tính Toán ARR và PSC:
+Chào mừng bạn đến với thư viện STM32F103! Thư viện này cung cấp các driver cơ bản và các chức năng hỗ trợ cho vi điều khiển STM32F103, bao gồm cấu hình GPIO, ADC, I2C, SPI, RTC và Timer. Dự án này nhằm mục đích cung cấp các công cụ tiện ích để dễ dàng lập trình và phát triển ứng dụng trên vi điều khiển STM32F103.
 
-ARR (Auto-Reload Register): Xác định giá trị giới hạn đếm của timer.
-PSC (Prescaler): Xác định giá trị phân chia tần số của clock.
-CNT (Counter Register): Giá trị bắt đầu của bộ đếm, thường là 0.
-Ví dụ: Nếu bạn muốn có một khoảng thời gian T = 1 giây, thì tần số của timer sau phân chia là 
-𝑓
-timer
-=
-𝑓
-clock
-PSC
-+
-1
-f 
-timer
-​
- = 
-PSC+1
-f 
-clock
-​
- 
-​
- . Với 
-𝑓
-clock
-=
-72
- MHz
-f 
-clock
-​
- =72 MHz và PSC = 71, thì 
-𝑓
-timer
-=
-72
- MHz
-72
-=
-1
- kHz
-f 
-timer
-​
- = 
-72
-72 MHz
-​
- =1 kHz.
+## Các Tập Tin
 
-Để đạt được một khoảng thời gian 1 giây, ARR phải là 
-𝑓
-timer
-T
-−
-1
-T
-f 
-timer
-​
- 
-​
- −1, tương đương với 1000 - 1 = 999.
+Dưới đây là danh sách các tập tin thư viện và mô tả của chúng:
 
-Bước 2: Cấu Hình Các Đăng Ký (Registers)
+- **`ADC_Library.c`** / **`ADC_Library.h`**: Thư viện cho cấu hình và xử lý ADC.
+- **`ExternalIRQ.c`** / **`ExternalIRQ.h`**: Thư viện cho ngắt ngoài.
+- **`GPIO_STM32.c`** / **`GPIO_STM32.h`**: Thư viện cho cấu hình và điều khiển GPIO.
+- **`I2C_LCD.c`** / **`I2C_LCD.h`**: Thư viện cho giao tiếp I2C với màn hình LCD.
+- **`My_driver.c`** / **`My_driver.h`**: Driver tùy chỉnh.
+- **`RCC_STM32.c`** / **`RCC_STM32.h`**: Thư viện cho cấu hình và điều khiển RCC.
+- **`RTC.c`** / **`RTC.h`**: Thư viện cho cấu hình và điều khiển RTC.
+- **`SPI_STM32.c`** / **`SPI_STM32.h`**: Thư viện cho giao tiếp SPI.
+- **`Timer.c`** / **`Timer.h`**: Thư viện cho cấu hình và điều khiển Timer.
 
-CR1 (Control Register 1):
+## Hướng dẫn Cài đặt
 
-Bit 7: Đặt chế độ ARR tự động nạp lại.
-Bit 4: Chế độ đếm lên (Counter Up).
-Bit 2 và Bit 1: Lưu giá trị đếm (Update).
-CR2 (Control Register 2):
+1. **Clone Repository**
 
-Bit 0: Kích hoạt cập nhật (Update Generation).
-Đặt Bit 0 CR1: Kích hoạt timer.
+    ```bash
+    git clone https://github.com/username/STM32F103_Library.git
+    ```
 
-Cấu Hình PWM
-Bước 1: Cấu Hình Timer (Tương Tự Như Bước 1 Trên)
+2. **Thêm Thư Viện vào Dự Án**
 
-Bước 2: Cấu Hình Timer (Tương Tự Như Bước 2 Trên)
+    Sao chép các file `.c` và `.h` vào thư mục dự án của bạn.
 
-Bước 3: Cấu Hình GPIO
+3. **Cấu Hình Dự Án**
 
-Thiết lập Chế Độ Alternate Function (AF): Đảm bảo chân GPIO tương ứng với PWM ở chế độ AF.
-Bước 4: Cấu Hình PWM Mode
+    - Bao gồm các file header vào mã nguồn của bạn.
+    - Đảm bảo cấu hình các tập tin `.c` vào dự án của bạn để biên dịch và liên kết.
 
-CCMR1 (Capture/Compare Mode Register 1):
-Chọn chế độ PWM Mode 1 (Cài đặt 110) để đếm từ 0 đến ARR.
-Bước 5: Cấu Hình Channel
+4. **Sử Dụng Thư Viện**
 
-CCRx (Capture/Compare Register x): Đặt giá trị PWM cho kênh (percent) cần thiết.
-Bước 6: Kích Hoạt Capture/Compare
+    - Tham khảo các file header để biết cách sử dụng các hàm và cấu hình.
+    - Xem các ví dụ trong thư viện để hiểu cách tích hợp các chức năng vào dự án của bạn.
 
-CCER (Capture/Compare Enable Register): Đặt giá trị CCER = 1 để kích hoạt chức năng capture/compare.
-Bước 7: Kích Hoạt Timer
+## Học Cùng Nhau
 
-CR1 (Control Register 1): Đặt bit 0 UG để kích hoạt cập nhật (Update Generation) và bật bộ đếm.
+Hãy cùng nhau khám phá và cải thiện kỹ năng lập trình với STM32F103. Nếu bạn có bất kỳ câu hỏi nào hoặc muốn đóng góp vào dự án, đừng ngần ngại liên hệ với tôi hoặc gửi yêu cầu pull.
 
+## Liên hệ
 
-1. Cấu Hình UART (Universal Asynchronous Receiver/Transmitter)
-Cấu Hình UART
-Chọn UART Peripheral:
+- **Tác giả**: Thành
+- **Email**: thanhnguyen76bk@gmail.com
 
-Xác định UART nào bạn sẽ sử dụng (UART1, UART2, v.v.).
-Cấu Hình GPIO:
-
-Chọn chân GPIO cho TX và RX.
-Thiết lập các chân GPIO cho chế độ Alternate Function (AF) để phù hợp với UART.
-Cấu Hình UART:
-
-Ba cấu hình chính: Baud rate, Word length, Stop bits, Parity, và Flow control.
-Ví dụ cấu hình UART1 với baud rate 9600:
-
-Cấu Hình SPI
-Chọn SPI Peripheral:
-
-Xác định SPI nào bạn sẽ sử dụng (SPI1, SPI2, v.v.).
-Cấu Hình GPIO:
-
-Chọn chân GPIO cho SCK, MOSI, MISO, và (nếu cần) SS.
-Thiết lập các chân GPIO cho chế độ Alternate Function (AF) để phù hợp với SPI.
-Cấu Hình SPI:
-
-Ba cấu hình chính: Baud rate, Data size, Clock polarity (CPOL), Clock phase (CPHA), và Frame format.
-Ví dụ cấu hình SPI1:
-
-
-Sử Dụng SPI
-Gửi Dữ Liệu:
-
-3. Cấu Hình I2C (Inter-Integrated Circuit)
-Cấu Hình I2C
-Chọn I2C Peripheral:
-
-Xác định I2C nào bạn sẽ sử dụng (I2C1, I2C2, v.v.).
-Cấu Hình GPIO:
-
-Chọn chân GPIO cho SDA và SCL.
-Thiết lập các chân GPIO cho chế độ Alternate Function (AF) để phù hợp với I2C.
-Cấu Hình I2C:
-
-Ba cấu hình chính: Clock speed, Addressing mode, và Digital noise filter.
-Ví dụ cấu hình I2C1:
-
+Cảm ơn bạn đã tham gia và chúc bạn phát triển ứng dụng thành công!
