@@ -1,131 +1,133 @@
-#include "FLASH.h"
+#include "Flash.h"
 
-/* Function to write data to Flash memory */
-void Flash_write(volatile uint32_t address_start, volatile uint16_t *data, volatile uint32_t size)
+/* Flash base address and size, assuming defined in platform_types.h */
+#define FLASH_BASE_ADDRESS  0x08000000U
+#define FLASH_SIZE          0x00100000U  // 1MB Flash
+
+/* Magic numbers */
+#define FLASH_KEY1          0x45670123U
+#define FLASH_KEY2          0xCDEF89ABU
+#define FLASH_PG_BIT        (1U << 0)
+#define FLASH_PER_BIT       (1U << 1)
+#define FLASH_START_BIT     (1U << 6)
+#define FLASH_BUSY_BIT      (1U << 0)
+#define FLASH_LOCK_BIT      (1U << 7)
+
+/**
+ * @brief Reads data from flash memory
+ * @param address Starting address to read from
+ * @param size Number of bytes to read
+ * @param data Pointer to store the read data
+ */
+void Fls_ReadMemory(uint32 address, uint32 size, uint8* data)
 {
-    // Check if Flash programming mode is already enabled, disable if so
-    if (FLASH->CR & (1U << 1))
+    /* Ensure address is within valid flash memory range */
+    if((address < FLASH_BASE_ADDRESS) || (address > (FLASH_BASE_ADDRESS + FLASH_SIZE)))
     {
-        FLASH->CR &= ~(1U << 1);
+        return; // Invalid address, return without doing anything
     }
-
-    // Ensure size is an even number, since Flash operates in half-words
-    if (size % 2 != 0U)
+    
+    /* If size is a multiple of 4, read in 32-bit chunks */
+    if(size % 4 == 0)
     {
-        size += 1U;
-    }
-
-    // Calculate the number of half-words to write
-    uint32_t length = (uint32_t)(size / 2U);
-
-    // Unlock Flash memory if locked
-    if (FLASH->CR & (1U << 7))
-    {
-        FLASH->KEYR = 0x45670123; // First key
-        FLASH->KEYR = 0xCDEF89AB; // Second key
-    }
-
-    // Enable Flash programming
-    FLASH->CR |= (1U << 0);
-
-    // Write data to Flash memory in half-words
-    for (uint32_t i = 0U; i < length; i++)
-    {
-        // Handle unaligned trap if necessary
-        if (SCB->CCR & (1U << 3))
+        size /= 4;
+        for(uint32 i = 0; i < size; i++)
         {
-            SCB->CCR &= ~(1U << 3); // Clear unaligned trap bit
+            *((uint32*)data + i) = *((volatile uint32*)address + i);
         }
-
-        // Write half-word to Flash
-        *((volatile uint16_t *)address_start + i) = *((volatile uint16_t *)data + i);
     }
-
-    // Wait for Flash write operation to complete (busy flag reset)
-    while ((FLASH->SR & (1U << 1)))
+    else
     {
-        // Busy wait
+        /* Read byte-by-byte if size is not aligned to 32-bit */
+        for(uint32 i = 0; i < size; i++)
+        {
+            *(data + i) = *((volatile uint8*)address + i);
+        }
     }
-
-    // Disable Flash programming
-    FLASH->CR &= ~(1U << 0);
 }
 
-/* Function to read data from Flash memory (in 32-bit words) */
-void Flash_read(volatile uint32_t address_start, volatile uint32_t *data, volatile uint32_t size)
+/**
+ * @brief Unlocks flash memory for writing or erasing
+ */
+void Fls_Unlock(void)
 {
-    uint32_t length = (uint32_t)(size / 4U); // Calculate number of 32-bit words to read
-
-    // Wait for any previous operations to complete
-    while (FLASH->SR & (1U << 1))
+    if(FLASH->CR & FLASH_LOCK_BIT) // If Flash is locked
     {
-        // Busy wait
-    }
-
-    // Unlock Flash memory if locked
-    if (FLASH->CR & (1U << 7))
-    {
-        FLASH->KEYR = 0x45670123; // First key
-        FLASH->KEYR = 0xCDEF89AB; // Second key
-    }
-
-    // Read data from Flash memory
-    for (uint32_t i = 0U; i < length; i++)
-    {
-        *(data + i) = *((volatile uint32_t *)address_start + i);
+        FLASH->KEYR = FLASH_KEY1;
+        FLASH->KEYR = FLASH_KEY2;
     }
 }
 
-/* Function to read data from Flash memory in half-words (16-bit) */
-void Flash_read_half_word(volatile uint32_t address_start, volatile uint16_t *data, volatile uint32_t size)
+/**
+ * @brief Writes data to flash memory
+ * @param address Starting address in flash memory
+ * @param size Size of the data (in bytes)
+ * @param data Pointer to the data to be written
+ */
+void Fls_WriteMemory(uint32 address, uint32 size, const uint8* data)
 {
-    // Wait for any previous operations to complete
-    while (FLASH->SR & (1U << 1))
+    if(size % 2 != 0) return; // Flash can only write in 16-bit words
+
+    /* Wait if flash is busy */
+    while(FLASH->SR & FLASH_BUSY_BIT)
     {
-        // Busy wait
+        /* Wait loop */
     }
 
-    // Unlock Flash memory if locked
-    if (FLASH->CR & (1U << 7))
+    /* Unlock flash if it is locked */
+    Fls_Unlock();
+
+    /* Enable programming mode */
+    FLASH->CR |= FLASH_PG_BIT;
+
+    /* Write data to flash */
+    size /= 2; // Convert size to 16-bit words
+    for(uint32 i = 0; i < size; i++)
     {
-        FLASH->KEYR = 0x45670123; // First key
-        FLASH->KEYR = 0xCDEF89AB; // Second key
+        *((volatile uint16*)address + i) = *((uint16*)data + i);
     }
 
-    // Read data from Flash memory
-    for (uint32_t i = 0U; i < size; i++)
+    /* Wait until flash programming is complete */
+    while(FLASH->SR & FLASH_BUSY_BIT)
     {
-        *((volatile uint16_t *)data + i) = *((volatile uint16_t *)address_start + i);
+        /* Wait loop */
     }
+
+    /* Disable programming mode */
+    FLASH->CR &= ~FLASH_PG_BIT;
 }
 
-/* Function to erase a Flash memory page */
-void Flash_erase(volatile uint32_t address_start)
+/**
+ * @brief Erases a sector of flash memory
+ * @param address Address within the sector to erase
+ */
+void Fls_EraseMemory(uint32 address)
 {
-    // Unlock Flash memory if locked
-    if (FLASH->CR & (1U << 7))
+    /* Wait if flash is busy */
+    while(FLASH->SR & FLASH_BUSY_BIT)
     {
-        FLASH->KEYR = 0x45670123; // First key
-        FLASH->KEYR = 0xCDEF89AB; // Second key
+        /* Wait loop */
     }
 
-    // Enable page erase
-    FLASH->CR |= (1U << 1);
+    /* Unlock flash if it is locked */
+    Fls_Unlock();
 
-    // Set the page address to be erased
-    FLASH->AR = address_start;
+    /* Enable erase mode */
+    FLASH->CR |= FLASH_PER_BIT;
 
-    // Start erase operation
-    FLASH->CR |= (1U << 6);
+    /* Specify the address to erase */
+    FLASH->AR = address;
 
-    // Wait for erase operation to complete (busy flag reset)
-    while (FLASH->SR & (1U << 1))
+    /* Start the erase operation */
+    FLASH->CR |= FLASH_START_BIT;
+
+    /* Wait until the erase is complete */
+    while(FLASH->SR & FLASH_BUSY_BIT)
     {
-        // Busy wait
+        /* Wait loop */
     }
 
-    // Disable page erase
-    FLASH->CR &= ~(1U << 1);
-    FLASH->CR &= ~(1U << 6);
+    /* Disable erase mode */
+    FLASH->CR &= ~FLASH_START_BIT;
+    FLASH->CR &= ~FLASH_PER_BIT;
 }
-
